@@ -287,7 +287,7 @@ void setup() {
   
   // Estabelece conexão com o servidor
   try {
-    socket = new Socket("192.168.1.228", 5555);
+    socket = new Socket("*******", 5555);
     input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
     output = new PrintWriter(socket.getOutputStream(), true);
     connectionMon.setConnected(true);
