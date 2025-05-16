@@ -8,7 +8,6 @@
 %%% @version 1.0
 %%%-----------------------------------------------------------------------------
 -module(server).
--author("JPB02 and GitHub Copilot").
 -export([start_server/0, ceiling/1]).
 
 %%% Constantes do servidor
@@ -184,19 +183,30 @@ handle_login(ASocket, Pid, Username, Password) ->
         [{Username, StoredPassword, Level, Streak}] ->
             case StoredPassword =:= Password of
                 true ->
-                    % Login bem-sucedido
-                    ets:insert(players, {Pid, ASocket, Username}),
-                    
-                    % Envia resposta de sucesso com estatísticas do jogador
-                    Response = io_lib:format("LOGIN_SUCCESS;~p;~p;~p;~p", 
-                                            [Level, max(0, Streak), min(0, Streak), Pid]),
-                    gen_tcp:send(ASocket, list_to_binary(Response ++ "\n")),
-                    
-                    % Envia tabela de classificação
-                    send_leaderboard(ASocket),
-                    
-                    % Muda para o loop principal
-                    main_loop(ASocket, Pid, Username);
+                    % Verifica se o usuário já está conectado
+                    ActiveSessions = ets:match_object(players, {'_', '_', Username}),
+                    case ActiveSessions of
+                        [] ->
+                            % Usuário não está conectado, login bem-sucedido
+                            ets:insert(players, {Pid, ASocket, Username}),
+                            
+                            % Envia resposta de sucesso com estatísticas do jogador
+                            Response = io_lib:format("LOGIN_SUCCESS;~p;~p;~p;~p", 
+                                                    [Level, max(0, Streak), min(0, Streak), Pid]),
+                            gen_tcp:send(ASocket, list_to_binary(Response ++ "\n")),
+                            
+                            % Envia tabela de classificação
+                            send_leaderboard(ASocket),
+                            
+                            % Muda para o loop principal
+                            main_loop(ASocket, Pid, Username);
+                        
+                        _ ->
+                            % Usuário já está conectado
+                            Response = "LOGIN_FAILED;User already logged in elsewhere",
+                            gen_tcp:send(ASocket, list_to_binary(Response ++ "\n")),
+                            auth_loop(ASocket, Pid)
+                    end;
                 
                 false ->
                     % Senha incorreta
@@ -240,13 +250,16 @@ handle_logout(ASocket, Pid, Username) ->
     
     % Trata desistência se estiver em um jogo
     case get_game_id(Pid) of
-        {ok, GameId} -> handle_forfeit(Pid, Pid);
+        {ok, _GameId} -> 
+            handle_forfeit(Pid, Pid),  % Usa o próprio Pid como PlayerPid
+            ok;
         _ -> ok
     end,
     
     % Atualiza registro do jogador para remover associação com jogo
     case ets:lookup(players, Pid) of
-        [{Pid, _Socket, Username, _GameId}] ->
+        [{Pid, _Socket, Username, _GameIdUnused}] ->
+            % Use a different variable name to avoid the unsafe variable error
             ets:insert(players, {Pid, ASocket, Username});
         _ -> ok
     end,
@@ -690,21 +703,27 @@ update_stats(Username, Result) ->
                 {loss, _} -> -1                 % Reseta streak positivo, inicia streak de derrotas
             end,
             
-            % Calcula limiar de nível para rebaixamento e verifica mudanças de nível
-            LevelDownThreshold = -ceiling(Level/2),
+            % Calcula o threshold para descer de nível (ceiling(Level/2))
+            LevelDownThreshold = ceiling(Level/2),
             
-            % Verifica mudanças de nível
-            NewLevel = case Result of
-                win when NewStreak >= Level -> Level + 1;  % Sobe de nível após L vitórias consecutivas
-                loss when NewStreak =< LevelDownThreshold -> max(1, Level - 1); % Desce de nível
-                _ -> Level                                  % Sem mudança
-            end,
+            % Verifica mudanças de nível baseadas em streaks
+            NewLevel = 
+                if
+                    % Sobe de nível quando consegue Level vitórias consecutivas
+                    Result =:= win andalso NewStreak >= Level -> 
+                        Level + 1;
+                    
+                    % Desce de nível quando perde ceiling(Level/2) partidas consecutivas
+                    Result =:= loss andalso NewStreak =< 0 andalso abs(NewStreak) >= LevelDownThreshold -> 
+                        max(1, Level - 1);
+                    
+                    % Sem mudança
+                    true -> 
+                        Level
+                end,
             
-            % Reseta streak após mudança de nível
-            FinalStreak = if
-                NewLevel =/= Level -> 0;
-                true -> NewStreak
-            end,
+            % NÃO reseta o streak após mudança de nível - removida a lógica que resetava o streak
+            FinalStreak = NewStreak,  % Mantém o streak independentemente da mudança de nível
             
             % Output de debug para ajudar a diagnosticar problemas
             io:format("Estatísticas atualizadas para ~p: Nível ~p->~p, Streak ~p->~p~n", 
@@ -724,7 +743,9 @@ send_score_update(GameId) ->
     case ets:lookup(active_games, GameId) of
         [{GameId, Players}] ->
             % Extrai informações dos jogadores
-            [{Pid1, _, Score1}, {Pid2, _, Score2}] = Players,
+            [Player1, Player2] = Players,
+            {_, _, Score1} = Player1,
+            {_, _, Score2} = Player2,
             
             % Cria mensagem de atualização de pontuação que inclui PIDs
             Message = io_lib:format("SCORES;player1;~p;player2;~p", [Score1, Score2]),
@@ -761,7 +782,7 @@ send_leaderboard(Socket) ->
             if
                 Level1 > Level2 -> true;
                 Level1 < Level2 -> false;
-                true -> abs(Streak1) >= abs(Streak2)
+                true -> Streak1 > Streak2  % Maior streak aparece primeiro (incluindo negativos)
             end
         end,
         AllUsers
@@ -770,9 +791,16 @@ send_leaderboard(Socket) ->
     % Seleciona os 10 melhores
     TopUsers = lists:sublist(SortedUsers, 10),
     
-    % Formata a mensagem da tabela de classificação
+    % Formata a mensagem da tabela de classificação - agora incluindo estatísticas de vitórias/derrotas
+    % Calculamos vitórias como max(0, Streak) e derrotas como abs(min(0, Streak))
     Leaderboard = "LEADERBOARD" ++ lists:flatten([
-        io_lib:format(";~s;~p;~p", [Username, Level, Streak])
+        io_lib:format(";~s;~p;~p;~p;~p", [
+            Username, 
+            Level, 
+            Streak,
+            max(0, Streak),             % Vitórias: máximo entre 0 e streak
+            abs(min(0, Streak))        % Derrotas: valor absoluto do mínimo entre 0 e streak
+        ])
         || {Username, _, Level, Streak} <- TopUsers
     ]),
     

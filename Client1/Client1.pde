@@ -1074,17 +1074,19 @@ void updateLeaderboard(String[] parts) {
       leaderboard[i] = null;
     }
     
-    // Formato: LEADERBOARD;username1;level1;streak1;username2;level2;streak2;...
-    for (int i = 1; i < parts.length; i += 3) {
-      int index = (i - 1) / 3;
+    // Formato atualizado: LEADERBOARD;username1;level1;streak1;wins1;losses1;username2;...
+    for (int i = 1; i < parts.length; i += 5) {
+      int index = (i - 1) / 5;
       if (index < leaderboard.length) {
         String user = parts[i];
         int level = Integer.parseInt(parts[i+1]);
         int streak = Integer.parseInt(parts[i+2]);
+        int wins = Integer.parseInt(parts[i+3]);
+        int losses = Integer.parseInt(parts[i+4]);
         
-        // Formata a entrada da tabela de classificação
+        // Formata a entrada da tabela de classificação com informações de vitórias/derrotas
         String streakString = streak > 0 ? "+" + streak : "" + streak;
-        leaderboard[index] = (index + 1) + ". " + user + " (Level " + level + ", " + streakString + ")";
+        leaderboard[index] = (index + 1) + ". " + user + " (Level " + level + ", " + streakString + ", W-L: " + wins + "-" + losses + ")";
       }
     }
   }
