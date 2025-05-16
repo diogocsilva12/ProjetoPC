@@ -12,6 +12,10 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.locks.*;
 
+// Server connection settings
+String SERVER_IP = "127.0.0.1";  // Change to "localhost" or your server IP
+int SERVER_PORT = 5555;          // Server port
+
 ///////////////////////////////////////////////////////////////////////////////
 // Definição de Estados do Jogo
 // O cliente utiliza uma máquina de estados para controlar diferentes telas
@@ -287,7 +291,7 @@ void setup() {
   
   // Estabelece conexão com o servidor
   try {
-    socket = new Socket("*******", 5555);
+    socket = new Socket(SERVER_IP, SERVER_PORT);
     input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
     output = new PrintWriter(socket.getOutputStream(), true);
     connectionMon.setConnected(true);
@@ -307,7 +311,7 @@ void setup() {
             // Tenta reconectar após falha
             try {
               Thread.sleep(5000);  // Aguarda 5 segundos antes de tentar novamente
-              socket = new Socket("192.168.1.228", 5555);
+              socket = new Socket(SERVER_IP, SERVER_PORT);
               input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
               output = new PrintWriter(socket.getOutputStream(), true);
               connectionMon.setConnected(true);
@@ -601,6 +605,7 @@ void handleMainMenuState() {
   fill(150, 150, 150);
   rect(buttonX, height/2 + 180, buttonWidth, buttonHeight);
   fill(255);
+  textAlign(CENTER, CENTER);
   text("Logout", buttonX + buttonWidth/2, height/2 + 180 + buttonHeight/2);
 }
 
