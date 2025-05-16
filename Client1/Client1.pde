@@ -1031,6 +1031,7 @@ void readServerMessages() {
           // Registro bem-sucedido
           registerError = false;
           errorMessage = "";
+          resetInputFields(); // Adiciona esta linha para garantir que os campos sejam resetados
           state = GameState.LOGIN;
           
           // Sinaliza resposta de registro bem-sucedido
@@ -1295,15 +1296,25 @@ void register() {
   registerError = false;
   errorMessage = "";
   
+  // Armazena temporariamente o nome de usuário e senha
+  final String tempUsername = inputUsername;
+  final String tempPassword = inputPassword;
+  
   // Inicia uma thread para tratar registro e evitar bloqueio da UI
   new Thread(new Runnable() {
     public void run() {
       try {
         // Envia solicitação de registro ao servidor
-        output.println("REGISTER;" + inputUsername + ";" + inputPassword);
+        output.println("REGISTER;" + tempUsername + ";" + tempPassword);
         
         // Aguarda resposta com timeout
         connectionMon.waitForResponse(5000); // 5 segundos de timeout
+        
+        // Após o registro bem-sucedido, reseta os campos
+        if (connectionMon.getResponse() != null && 
+            connectionMon.getResponse().equals("REGISTER_SUCCESS")) {
+          resetInputFields();
+        }
         
         // Resposta processada assincronamente em readServerMessages
         // Os casos REGISTER_SUCCESS ou REGISTER_FAILED atualizarão a UI
