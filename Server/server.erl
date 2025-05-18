@@ -1,7 +1,7 @@
 %%%-----------------------------------------------------------------------------
 %%% @title Servidor do Jogo Duelo
 %%% @author João Barbosa, Diogo Silva, Pedro Oliveira
-%%% @doc Servidor para o jogo multijogador "Duelo" implementado como projeto
+%%% @doc Servidor para o jogo multiplayer "Duelo" implementado como projeto
 %%%      da disciplina de Programação Concorrente na Universidade do Minho.
 %%%      O servidor gerencia autenticação, matchmaking, múltiplas partidas
 %%%      simultâneas e sistema de ranking dos jogadores.
@@ -64,13 +64,13 @@ handler(ASocket) ->
     Pid = self(),
     io:format("Cliente ~p conectou...~n", [Pid]),
     
-    % Configura o socket com timeout para detecção rápida de desconexão
+    % Configura o socket com timeout para deteção rápida de desconexão
     inet:setopts(ASocket, [{packet, line}, {send_timeout, 5000}]),
     
     % Inicia o loop de autenticação para este cliente
     auth_loop(ASocket, Pid).
 
-%% @doc Loop de autenticação que processa comandos de login/registro.
+%% @doc Loop de autenticação que processa comandos de login/registo.
 %% Uma vez autenticado, o cliente passa para o main_loop.
 auth_loop(ASocket, Pid) ->
     case gen_tcp:recv(ASocket, 0) of
@@ -222,14 +222,14 @@ handle_login(ASocket, Pid, Username, Password) ->
             auth_loop(ASocket, Pid)
     end.
 
-%% @doc Processa tentativa de registro de novo utilizador
+%% @doc Processa tentativa de registo de novo utilizador
 %% Verifica se nome de utilizador está disponível
 handle_register(ASocket, Pid, Username, Password) ->
     case ets:lookup(users, Username) of
         [] ->
-            % Nome de utilizador disponível, registra novo utilizador
+            % Nome de utilizador disponível, regista novo utilizador
             ets:insert(users, {Username, Password, 1, 0}), % Nível 1, Streak 0
-            save_users(), % Salva lista de utilizadores atualizada
+            save_users(), % Guarda lista de utilizadores atualizada
             
             Response = "REGISTER_SUCCESS",
             gen_tcp:send(ASocket, list_to_binary(Response ++ "\n")),
@@ -248,7 +248,7 @@ handle_logout(ASocket, Pid, Username) ->
     % Remove da fila de espera se presente
     ets:delete(waiting_players, Pid),
     
-    % Trata desistência se estiver em um jogo
+    % Trata desistência se estiver num jogo
     case get_game_id(Pid) of
         {ok, _GameId} -> 
             handle_forfeit(Pid, Pid),  % Usa o próprio Pid como PlayerPid
@@ -256,7 +256,7 @@ handle_logout(ASocket, Pid, Username) ->
         _ -> ok
     end,
     
-    % Atualiza registro do jogador para remover associação com jogo
+    % Atualiza registo do jogador para remover associação com jogo
     case ets:lookup(players, Pid) of
         [{Pid, _Socket, Username, _GameIdUnused}] ->
             % Use a different variable name to avoid the unsafe variable error
@@ -420,7 +420,7 @@ end_game(GameId) ->
             % Limpa dados do jogo
             ets:delete(active_games, GameId),
             
-            % Atualiza registros de jogadores para remover associação com o jogo
+            % Atualiza registos de jogadores para remover associação com o jogo
             case ets:lookup(players, Pid1) of
                 [{Pid1, Socket1a, Username1, _}] ->
                     ets:insert(players, {Pid1, Socket1a, Username1});
@@ -444,7 +444,7 @@ end_game(GameId) ->
 %% @doc Processa desistência de um jogador
 %% Atualiza estatísticas e finaliza o jogo
 handle_forfeit(Pid, _PlayerPid) ->
-    % Verifica se o jogador está em um jogo
+    % Verifica se o jogador está num jogo
     case get_game_id(Pid) of
         {ok, GameId} ->
             case ets:lookup(active_games, GameId) of
@@ -475,7 +475,7 @@ handle_forfeit(Pid, _PlayerPid) ->
                     % Limpa o jogo
                     ets:delete(active_games, GameId),
                     
-                    % Atualiza registros de jogadores para remover associação com o jogo
+                    % Atualiza registos de jogadores para remover associação com o jogo
                     case ets:lookup(players, Pid1) of
                         [{Pid1, Socket1, Username1, _}] ->
                             ets:insert(players, {Pid1, Socket1, Username1});
@@ -497,7 +497,7 @@ handle_forfeit(Pid, _PlayerPid) ->
             end;
         
         _ ->
-            % Jogador não está em um jogo
+            % Jogador não está num jogo
             ok
     end.
 
@@ -561,7 +561,7 @@ handle_hit(Pid, _X, _Y, ShooterPid) ->
             end;
         
         _ ->
-            % Jogador não está em um jogo
+            % Jogador não está num jogo
             ok
     end.
 
@@ -582,7 +582,7 @@ handle_modifier_pickup(Pid, X, Y, _PlayerPid) ->
             end;
         
         _ ->
-            % Jogador não está em um jogo
+            % Jogador não está num jogo
             ok
     end.
 
@@ -617,7 +617,7 @@ handle_wall_collision(Pid, _PlayerPid) ->
             end;
         
         _ ->
-            % Jogador não está em um jogo
+            % Jogador não está num jogo
             ok
     end.
 
@@ -650,7 +650,7 @@ handle_disconnect(Pid, Username) ->
     ets:delete(players, Pid),
     ets:delete(waiting_players, Pid),
     
-    % Verifica se o jogador estava em um jogo
+    % Verifica se o jogador estava num jogo
     case get_game_id(Pid) of
         {ok, GameId} ->
             % Finaliza o jogo se ainda estiver ativo
@@ -698,9 +698,9 @@ update_stats(Username, Result) ->
             % Calcula novo streak
             NewStreak = case {Result, Streak} of
                 {win, S} when S >= 0 -> S + 1;  % Continua streak de vitórias ou inicia novo
-                {win, _} -> 1;                  % Reseta streak negativo, inicia streak de vitórias
+                {win, _} -> 1;                  % reinicia streak negativo, inicia streak de vitórias
                 {loss, S} when S =< 0 -> S - 1; % Continua streak de derrotas ou inicia novo
-                {loss, _} -> -1                 % Reseta streak positivo, inicia streak de derrotas
+                {loss, _} -> -1                 % reinicia streak positivo, inicia streak de derrotas
             end,
             
             % Calcula o threshold para descer de nível (ceiling(Level/2))
@@ -722,7 +722,7 @@ update_stats(Username, Result) ->
                         Level
                 end,
             
-            % NÃO reseta o streak após mudança de nível - removida a lógica que resetava o streak
+            % NÃO reinicia o streak após mudança de nível - removida a lógica que reiniciava o streak
             FinalStreak = NewStreak,  % Mantém o streak independentemente da mudança de nível
             
             % Output de debug para ajudar a diagnosticar problemas
@@ -836,7 +836,7 @@ broadcast_to_game(SenderPid, Data) ->
             end;
         
         _ ->
-            % Jogador não está em um jogo
+            % Jogador não está num jogo
             ok
     end.
 
@@ -848,7 +848,7 @@ get_game_id(Pid) ->
     end.
 
 %%%=============================================================================
-%%% Funções de Gerenciamento de Modificadores
+%%% Funções de Gestão de Modificadores
 %%%=============================================================================
 
 %% @doc Gera modificadores para um jogo em intervalos regulares
@@ -905,7 +905,7 @@ spawn_modifier(GameId) ->
             notify_modifier(GameId, X, Y, Type)
     end.
 
-%% @doc Envia notificação sobre novo modificador para todos os jogadores em um jogo
+%% @doc Envia notificação sobre novo modificador para todos os jogadores num jogo
 notify_modifier(GameId, X, Y, Type) ->
     % Obtém todos os jogadores no jogo
     case ets:lookup(active_games, GameId) of
@@ -962,12 +962,12 @@ load_users() ->
             io:format("Nenhum ficheiro de utilizadores encontrado ou erro ao ler. Iniciando com base de dados de utilizadores vazia.~n")
     end.
 
-%% @doc Salva utilizadores em ficheiro para persistência
+%% @doc Guarda utilizadores em ficheiro para persistência
 save_users() ->
     Users = ets:tab2list(users),
     file:write_file("users.dat", io_lib:format("~p.~n", [Users])).
 
-%% @doc Função auxiliar para calcular tecto (já que não está disponível em todas as versões de Erlang)
+%% @doc Função auxiliar para calcular teto (já que não está disponível em todas as versões de Erlang)
 ceiling(X) when X < 0 ->
     trunc(X);
 ceiling(X) ->

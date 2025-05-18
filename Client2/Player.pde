@@ -350,7 +350,7 @@ public class Player {
   }
   
   /**
-   * Reseta todos os modificadores ao estado padrão.
+   * reinicia todos os modificadores ao estado padrão.
    * Utilizado ao fazer logout ou reiniciar o jogo.
    */
   public void resetModifiers() {
@@ -362,7 +362,7 @@ public class Player {
   }
   
   /**
-   * Reseta o estado de movimento do jogador.
+   * reinicia o estado de movimento do jogador.
    * Usado quando uma partida termina ou o jogador é reposicionado.
    */
   public void resetMovement() {

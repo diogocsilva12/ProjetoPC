@@ -369,7 +369,7 @@ void draw() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Gerenciamento de Estados da Interface
+// Gestão de Estados da Interface
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -472,7 +472,7 @@ void handleLoginState() {
   textAlign(CENTER, CENTER);
   text("Login", buttonX + buttonWidth/2, buttonY + buttonHeight/2);
   
-  // Botão de registro
+  // Botão de registo
   fill(100, 200, 150);
   rect(secondButtonX, secondButtonY, buttonWidth, buttonHeight);
   
@@ -489,7 +489,7 @@ void handleLoginState() {
 }
 
 /**
- * Renderiza e gerencia o estado de registro.
+ * Renderiza e gerencia o estado de registo.
  */
 void handleRegisterState() {
   // Título
@@ -535,7 +535,7 @@ void handleRegisterState() {
     text("|", buttonX + 10 + textWidth(displayPass), height/2 + 30);
   }
   
-  // Botão de registro
+  // Botão de registo
   fill(100, 200, 150);
   rect(buttonX, buttonY, buttonWidth, buttonHeight);
   
@@ -773,7 +773,7 @@ void readServerMessages() {
           gameStateMon.startGame();
           state = GameState.INGAME;
           
-          // Reseta pontuações
+          // reinicia pontuações
           synchronized(p1Lock) {
             p1.setScore(0);
           }
@@ -791,7 +791,7 @@ void readServerMessages() {
             // Armazena coordenadas de spawn para identificação do jogador
             spawnX = Float.parseFloat(parts[1]);
             spawnY = Float.parseFloat(parts[2]);
-            // Reseta posição do jogador para as coordenadas de spawn
+            // reinicia posição do jogador para as coordenadas de spawn
             synchronized(p1Lock) {
               p1.resetPlayer(spawnX, spawnY);
             }
@@ -803,7 +803,7 @@ void readServerMessages() {
           gameStateMon.endGame();
           println("Game ended by server.");
           
-          // Reseta estado de movimento do jogador
+          // reinicia estado de movimento do jogador
           synchronized(p1Lock) {
             p1.resetMovement();
           }
@@ -921,7 +921,7 @@ void readServerMessages() {
           break;
 
         case "RESET_POSITIONS":
-          // Reseta posições dos jogadores
+          // reinicia posições dos jogadores
           if (state == GameState.INGAME) {
             synchronized(p1Lock) {
               p1.resetPlayer(spawnX, spawnY);
@@ -967,7 +967,7 @@ void readServerMessages() {
           gameStateMon.endGame();
           println("Game forfeited.");
           
-          // Reseta estado de movimento do jogador
+          // reinicia estado de movimento do jogador
           synchronized(p1Lock) {
             p1.resetMovement();
           }
@@ -999,7 +999,7 @@ void readServerMessages() {
               clientPID = parts[4];
             }
             
-            // Reseta erros
+            // reinicia erros
             loginError = false;
             errorMessage = "";
             
@@ -1028,23 +1028,23 @@ void readServerMessages() {
           break;
           
         case "REGISTER_SUCCESS":
-          // Registro bem-sucedido
+          // registo bem-sucedido
           registerError = false;
           errorMessage = "";
-          resetInputFields(); // Adiciona esta linha para garantir que os campos sejam resetados
+          resetInputFields(); // Adiciona esta linha para garantir que os campos sejam reiniciados
           state = GameState.LOGIN;
           
-          // Sinaliza resposta de registro bem-sucedido
+          // Sinaliza resposta de registo bem-sucedido
           connectionMon.setResponse("REGISTER_SUCCESS");
           break;
           
         case "REGISTER_FAILED":
-          // Falha no registro
+          // Falha no registo
           if (parts.length >= 2) {
             registerError = true;
             errorMessage = parts[1];
             
-            // Sinaliza resposta de registro falho
+            // Sinaliza resposta de registo falho
             connectionMon.setResponse("REGISTER_FAILED");
           }
           break;
@@ -1070,7 +1070,7 @@ void readServerMessages() {
  */
 void updateLeaderboard(String[] parts) {
   synchronized(leaderboardLock) {
-    // Reseta tabela de classificação
+    // reinicia tabela de classificação
     for (int i = 0; i < leaderboard.length; i++) {
       leaderboard[i] = null;
     }
@@ -1256,7 +1256,7 @@ void login() {
     return;
   }
   
-  // Reseta erros anteriores
+  // reinicia erros anteriores
   loginError = false;
   errorMessage = "";
   
@@ -1282,7 +1282,7 @@ void login() {
 }
 
 /**
- * Processa tentativa de registro.
+ * Processa tentativa de registo.
  * Valida informações básicas e envia solicitação ao servidor.
  */
 void register() {
@@ -1292,7 +1292,7 @@ void register() {
     return;
   }
   
-  // Reseta erros anteriores
+  // reinicia erros anteriores
   registerError = false;
   errorMessage = "";
   
@@ -1300,17 +1300,17 @@ void register() {
   final String tempUsername = inputUsername;
   final String tempPassword = inputPassword;
   
-  // Inicia uma thread para tratar registro e evitar bloqueio da UI
+  // Inicia uma thread para tratar registo e evitar bloqueio da UI
   new Thread(new Runnable() {
     public void run() {
       try {
-        // Envia solicitação de registro ao servidor
+        // Envia solicitação de registo ao servidor
         output.println("REGISTER;" + tempUsername + ";" + tempPassword);
         
         // Aguarda resposta com timeout
         connectionMon.waitForResponse(5000); // 5 segundos de timeout
         
-        // Após o registro bem-sucedido, reseta os campos
+        // Após o registo bem-sucedido, reinicia os campos
         if (connectionMon.getResponse() != null && 
             connectionMon.getResponse().equals("REGISTER_SUCCESS")) {
           resetInputFields();
@@ -1328,8 +1328,8 @@ void register() {
 }
 
 /**
- * Reseta os campos de entrada.
- * Usado ao trocar entre telas de login/registro.
+ * reinicia os campos de entrada.
+ * Usado ao trocar entre telas de login/registo.
  */
 void resetInputFields() {
   inputUsername = "";
@@ -1366,7 +1366,7 @@ void mousePressed() {
                mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
         login();
       }
-      // Verifica se o botão de registro foi clicado
+      // Verifica se o botão de registo foi clicado
       else if (mouseX >= secondButtonX && mouseX <= secondButtonX + buttonWidth && 
                mouseY >= secondButtonY && mouseY <= secondButtonY + buttonHeight) {
         resetInputFields();
@@ -1385,7 +1385,7 @@ void mousePressed() {
                mouseY >= height/2 + 10 && mouseY <= height/2 + 50) {
         focusUsername = false;
       }
-      // Verifica se o botão de registro foi clicado
+      // Verifica se o botão de registo foi clicado
       else if (mouseX >= buttonX && mouseX <= buttonX + buttonWidth && 
                mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
         register();
@@ -1431,7 +1431,7 @@ void mousePressed() {
       // Botão logout
       else if (mouseX >= buttonX && mouseX <= buttonX + buttonWidth && 
                mouseY >= height/2 + 180 && mouseY <= height/2 + 180 + buttonHeight) {
-        // Reseta dados do usuário
+        // reinicia dados do usuário
         synchronized(userInfoLock) {
           username = "";
           clientPID = "UNASSIGNED";
@@ -1445,7 +1445,7 @@ void mousePressed() {
           output.println("LOGOUT");
         }
         
-        // Reseta campos de entrada e retorna à tela de login
+        // reinicia campos de entrada e retorna à tela de login
         resetInputFields();
         state = GameState.LOGIN;
       }
@@ -1533,7 +1533,7 @@ void keyPressed() {
           register();
         }
       } else if (key == BACKSPACE) {
-        // Trata backspace para deleção de texto
+        // Trata backspace para apagar o texto
         if (focusUsername && inputUsername.length() > 0) {
           inputUsername = inputUsername.substring(0, inputUsername.length() - 1);
         } else if (!focusUsername && inputPassword.length() > 0) {

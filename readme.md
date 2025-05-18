@@ -1,8 +1,8 @@
-# Duelo - Jogo Multijogador
+# Duelo - Jogo multiplayer
 
 ## Visão Geral
 
-Duelo é um jogo multijogador online desenvolvido como projeto para a Unidade Curricular de Programação Concorrente do 3º ano de Licenciatura em Ciências da Computação da Universidade do Minho. O jogo implementa uma arquitetura cliente-servidor, onde o cliente é desenvolvido em Java (Processing) e o servidor em Erlang.
+Duelo é um jogo multiplayer online desenvolvido como projeto para a Unidade Curricular de Programação Concorrente do 3º ano de Licenciatura em Ciências da Computação da Universidade do Minho. O jogo implementa uma arquitetura cliente-servidor, onde o cliente é desenvolvido em Java (Processing) e o servidor em Erlang.
 
 ## Funcionalidades Principais
 
@@ -33,7 +33,7 @@ Duelo é um jogo multijogador online desenvolvido como projeto para a Unidade Cu
 - Interface gráfica com múltiplos estados (login, menu, jogo, etc.)
 - Sistema de física para movimento com inércia
 - Comunicação com o servidor via sockets TCP
-- Detecção de colisões local
+- deteção de colisões local
 
 ### Servidor (Erlang)
 - Gestão de utilizadores e suas estatísticas
